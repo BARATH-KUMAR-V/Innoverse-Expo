@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f5f5f0;
+}
+
+/* Consistent, visible focus states for keyboard navigation (accessibility). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+video:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
