@@ -23,7 +23,11 @@ export async function GET(req: NextRequest) {
   };
 
   if (!code || !state || !expectedState || state !== expectedState) {
-    console.error("Google OAuth error: missing or mismatched state");
+    console.error("Google OAuth error: missing or mismatched state", {
+      hasCode: Boolean(code),
+      hasState: Boolean(state),
+      hasCookie: Boolean(expectedState),
+    });
     return fail("server");
   }
 

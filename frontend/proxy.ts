@@ -70,12 +70,13 @@ export default function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Config to specify which paths the middleware should run on.
-// Auth routes are intentionally excluded - intercepting them can break
-// the OAuth state-cookie flow (cookie set on redirect may not survive
-// the middleware layer in Next.js 16 Turbopack).
+// Apply rate limiting specifically to data and admin routes.
+// Auth routes (/api/auth/*) are completely bypassed so Next.js 16 does not intercept cookie headers.
 export const config = {
   matcher: [
-    '/api/((?!auth/).*)',
+    '/api/votes/:path*',
+    '/api/admin/:path*',
+    '/api/teams/:path*',
+    '/api/results/:path*',
   ],
 };
