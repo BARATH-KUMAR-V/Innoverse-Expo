@@ -8,14 +8,15 @@ export default function ProductCard({ team }: { team: GalleryTeam }) {
       href={`/product/${team.id}`}
       className="group block overflow-hidden rounded-lg border border-navy-deep/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-gold/50 hover:shadow-lg"
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-navy-deep/5">
+      <div className="relative w-full overflow-hidden bg-navy-deep/5">
         {team.imageUrl ? (
           <Image
             src={team.imageUrl}
             alt={team.teamName}
-            fill
+            width={800}
+            height={800}
             sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-            className="object-cover transition duration-500 group-hover:scale-[1.03]"
+            className="w-full h-auto transition duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-navy-deep/25">
