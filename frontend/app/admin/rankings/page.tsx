@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiPost, API_URL, ApiError } from "@/lib/api";
+import { apiGet, apiPost, apiDownload, ApiError } from "@/lib/api";
 import { RankingRow, AdminStats } from "@/lib/types";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import LoadingState from "@/components/LoadingState";
@@ -50,9 +50,7 @@ export default function AdminRankingsPage() {
     setExporting(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/admin/export`, { credentials: "include" });
-      if (!res.ok) throw new Error("Export failed.");
-      const blob = await res.blob();
+      const blob = await apiDownload("/admin/export");
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

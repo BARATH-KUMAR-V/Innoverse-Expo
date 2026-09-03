@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { apiGet, ApiError } from "@/lib/api";
 import { GalleryTeam, VotingStatus } from "@/lib/types";
+import { formatEventDateTime } from "@/lib/format-datetime";
 import Header from "@/components/Header";
 import ProductCard from "@/components/ProductCard";
 import FlashToast from "@/components/FlashToast";
@@ -15,7 +16,7 @@ export default function GalleryPage() {
   const router = useRouter();
   const { status, fetchMe } = useAuthStore();
   const [teams, setTeams] = useState<GalleryTeam[] | null>(null);
-  const [votingOpen, setVotingOpen] = useState<boolean | null>(null);
+  const [votingStatus, setVotingStatus] = useState<VotingStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function GalleryPage() {
         ]);
         if (cancelled) return;
         setTeams(teamsData);
-        setVotingOpen(statusData.votingOpen);
+        setVotingStatus(statusData);
       } catch (err) {
         if (!cancelled) setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
       }
@@ -66,17 +67,19 @@ export default function GalleryPage() {
         <p className="mb-6 text-sm text-navy-deep/60">Browse &amp; vote for your favorite product</p>
 
         <div className="mb-2 flex flex-wrap items-center justify-center gap-4 text-sm">
-          {votingOpen === true && (
+          {votingStatus?.votingOpen === true && (
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-600/30 bg-emerald-50 px-4 py-1.5 text-emerald-700">
               🟢 Voting Open
             </span>
           )}
-          {votingOpen === false && (
+          {votingStatus?.votingOpen === false && (
             <span className="inline-flex items-center gap-2 rounded-full border border-rose/30 bg-rose/10 px-4 py-1.5 text-rose">
               🔴 Voting Closed
             </span>
           )}
-          <span className="text-navy-deep/50">⏰ Closes: Saturday 1:30 PM</span>
+          {votingStatus?.votingEndsAt && (
+            <span className="text-navy-deep/50">⏰ Closes: {formatEventDateTime(votingStatus.votingEndsAt)}</span>
+          )}
         </div>
         <p className="text-xs text-navy-deep/50">Vote based on the creativity and innovation of the students.</p>
       </section>

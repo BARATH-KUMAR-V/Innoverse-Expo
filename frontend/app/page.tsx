@@ -1,9 +1,12 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useUIStore } from "@/store/uiStore";
+import { apiGet } from "@/lib/api";
+import { EventSettings } from "@/lib/types";
+import { formatEventDateTime } from "@/lib/format-datetime";
 import LoginModal from "@/components/LoginModal";
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -11,15 +14,29 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   server: "Unable to sign in. Please try again.",
 };
 
+const VOTING_STATE_LABELS: Record<EventSettings["votingState"], string> = {
+  NOT_STARTED: "Voting Not Started",
+  LIVE: "Voting Is Live",
+  CLOSED: "Voting Closed",
+  RESULTS_PUBLISHED: "Results Published",
+};
+
 function LandingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, fetchMe } = useAuthStore();
   const { openLoginModal } = useUIStore();
+  const [event, setEvent] = useState<EventSettings | null>(null);
 
   useEffect(() => {
     fetchMe();
   }, [fetchMe]);
+
+  useEffect(() => {
+    apiGet<EventSettings>("/event-settings")
+      .then(setEvent)
+      .catch(() => setEvent(null));
+  }, []);
 
   const authError = searchParams.get("authError");
 
@@ -39,10 +56,16 @@ function LandingContent() {
         <p className="mb-6 text-xs uppercase tracking-[0.4em] text-gold">Prompt to Product Expo</p>
         <h1 className="mb-6 font-serif text-5xl leading-tight sm:text-6xl">INNOVERSE</h1>
         <div className="mb-10 h-px w-16 bg-gold/50" />
-        <p className="mb-12 max-w-xl text-base leading-relaxed text-cream/70 sm:text-lg">
+        <p className="mb-8 max-w-xl text-base leading-relaxed text-cream/70 sm:text-lg">
           Witness the creative genius of student designers who transformed AI-generated ideas into stunning 3D
           products.
         </p>
+
+        {event && (
+          <span className="mb-10 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-1.5 text-xs uppercase tracking-wide text-gold">
+            {VOTING_STATE_LABELS[event.votingState]}
+          </span>
+        )}
 
         {authError && (
           <p role="alert" className="mb-8 rounded border border-rose/40 bg-rose/10 px-4 py-3 text-sm text-cream">
@@ -65,19 +88,19 @@ function LandingContent() {
         <dl className="grid grid-cols-1 gap-6 text-sm text-cream/80 sm:grid-cols-2">
           <div>
             <dt className="mb-1 text-xs uppercase tracking-wide text-cream/50">Location</dt>
-            <dd>Ground Floor, NewGen IEDC, Tech Park, National Engineering College</dd>
+            <dd>{event?.expoVenue || "To be announced"}</dd>
           </div>
           <div>
             <dt className="mb-1 text-xs uppercase tracking-wide text-cream/50">Hours</dt>
-            <dd>Thursday – Saturday, 10:00 AM – 5:00 PM</dd>
+            <dd>{event?.expoDate || "To be announced"}</dd>
           </div>
           <div>
             <dt className="mb-1 text-xs uppercase tracking-wide text-cream/50">Voting Closes</dt>
-            <dd>Saturday, 1:30 PM</dd>
+            <dd>{formatEventDateTime(event?.votingEndsAt) || "To be announced"}</dd>
           </div>
           <div>
             <dt className="mb-1 text-xs uppercase tracking-wide text-cream/50">Winners Announced</dt>
-            <dd>Saturday, 2:00 PM</dd>
+            <dd>{formatEventDateTime(event?.winnersAnnounceAt) || "To be announced"}</dd>
           </div>
         </dl>
       </section>

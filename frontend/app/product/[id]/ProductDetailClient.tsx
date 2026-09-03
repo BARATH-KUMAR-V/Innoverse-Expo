@@ -19,16 +19,25 @@ export default function ProductDetailClient({ id }: { id: string }) {
 
   const [team, setTeam] = useState<TeamDetail | null>(null);
   const [myVote, setMyVote] = useState<MyVote | null>(null);
-  const [votingOpen, setVotingOpen] = useState<boolean | null>(null);
+  const [votingStatus, setVotingStatus] = useState<VotingStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     fetchMe();
   }, [fetchMe]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setLightboxOpen(false);
+    }
+    if (lightboxOpen) document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen]);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/");
@@ -47,7 +56,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
         if (cancelled) return;
         setTeam(teamData);
         setMyVote(voteData);
-        setVotingOpen(statusData.votingOpen);
+        setVotingStatus(statusData);
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof ApiError ? err.message : "This product is currently unavailable.");
@@ -106,16 +115,28 @@ export default function ProductDetailClient({ id }: { id: string }) {
               {team.teamName}
             </h1>
 
-            <div className="relative mb-10 aspect-[16/10] w-full overflow-hidden rounded-lg border border-navy-deep/10 bg-navy-deep/5 shadow-sm">
+            <div
+              className="group relative mb-10 aspect-[16/10] w-full overflow-hidden rounded-lg border border-navy-deep/10 bg-navy-deep/5 shadow-sm"
+              style={team.imageUrl ? { cursor: "zoom-in" } : undefined}
+              onClick={() => team.imageUrl && setLightboxOpen(true)}
+            >
               {team.imageUrl && (
-                <Image
-                  src={team.imageUrl}
-                  alt={team.teamName}
-                  fill
-                  sizes="(min-width: 768px) 768px, 100vw"
-                  className="object-cover"
-                  priority
-                />
+                <>
+                  <Image
+                    src={team.imageUrl}
+                    alt={team.teamName}
+                    fill
+                    sizes="(min-width: 768px) 768px, 100vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    priority
+                  />
+                  {/* hover hint */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <span className="rounded-full bg-black/50 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur-sm">
+                      View Full Image
+                    </span>
+                  </div>
+                </>
               )}
             </div>
 
@@ -127,7 +148,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
             )}
 
             <div className="flex flex-col items-center gap-3 pb-4 pt-2">
-              {votingOpen === false ? (
+              {votingStatus?.votingOpen === false ? (
                 <p className="rounded border border-rose/30 bg-rose/10 px-5 py-3 text-sm text-rose">
                   Voting has closed. No further votes can be submitted.
                 </p>
@@ -151,6 +172,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
       {confirmOpen && team && (
         <ConfirmVoteModal
           teamName={team.teamName}
+          winnersAnnounceAt={votingStatus?.winnersAnnounceAt ?? null}
           submitting={submitting}
           errorMessage={voteError}
           onConfirm={handleConfirmVote}
@@ -161,6 +183,36 @@ export default function ProductDetailClient({ id }: { id: string }) {
             }
           }}
         />
+      )}
+
+      {/* ── Lightbox ── */}
+      {lightboxOpen && team?.imageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* close button */}
+          <button
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25"
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+
+          {/* full image */}
+          <div
+            className="relative max-h-[90vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={team.imageUrl}
+              alt={team.teamName}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,37 @@
 
 import { useState, FormEvent } from "react";
 import { AdminTeam } from "@/lib/types";
-import { apiUpload, ApiError } from "@/lib/api";
+import { apiPost, apiPut, ApiError } from "@/lib/api";
+import { supabaseBrowser } from "@/lib/supabase-browser";
+
+interface SignedUpload {
+  bucket: string;
+  path: string;
+  token: string;
+  publicUrl: string;
+}
+
+/**
+ * Vercel Route Handlers cap request bodies at ~4.5MB, far below the 150MB
+ * video limit this app supports, so the file goes straight from the browser
+ * to Supabase Storage via a signed URL instead of through the API - see
+ * /api/admin/uploads/sign.
+ */
+async function uploadDirectToStorage(file: File, kind: "image" | "video"): Promise<string> {
+  const signed = await apiPost<SignedUpload>("/admin/uploads/sign", {
+    kind,
+    fileName: file.name,
+    contentType: file.type,
+    fileSize: file.size,
+  });
+
+  const { error } = await supabaseBrowser.storage.from(signed.bucket).uploadToSignedUrl(signed.path, signed.token, file);
+  if (error) {
+    throw new ApiError(502, "storage_error", "Could not upload the file. Please try again.");
+  }
+
+  return signed.publicUrl;
+}
 
 interface TeamFormModalProps {
   team: AdminTeam | null; // null = create mode
@@ -26,16 +56,17 @@ export default function TeamFormModal({ team, onClose, onSaved }: TeamFormModalP
     setSubmitting(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append("teamName", teamName.trim());
-    if (imageFile) formData.append("image", imageFile);
-    if (videoFile) formData.append("video", videoFile);
-
     try {
+      const [imageUrl, videoUrl] = await Promise.all([
+        imageFile ? uploadDirectToStorage(imageFile, "image") : Promise.resolve(undefined),
+        videoFile ? uploadDirectToStorage(videoFile, "video") : Promise.resolve(undefined),
+      ]);
+
+      const body = { teamName: teamName.trim(), imageUrl, videoUrl };
       if (team) {
-        await apiUpload(`/admin/teams/${team.id}`, "PUT", formData);
+        await apiPut(`/admin/teams/${team.id}`, body);
       } else {
-        await apiUpload("/admin/teams", "POST", formData);
+        await apiPost("/admin/teams", body);
       }
       onSaved();
     } catch (err) {

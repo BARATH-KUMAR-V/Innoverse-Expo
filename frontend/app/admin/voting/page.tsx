@@ -10,7 +10,7 @@ import ErrorBanner from "@/components/ErrorBanner";
 export default function AdminVotingPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<"start" | "stop" | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"start" | "stop" | "clear" | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -31,7 +31,11 @@ export default function AdminVotingPage() {
     if (!confirmAction) return;
     setBusy(true);
     try {
-      await apiPost(`/admin/voting/${confirmAction}`);
+      if (confirmAction === "clear") {
+        await fetch("/api/admin/votes/clear", { method: "DELETE", credentials: "include" });
+      } else {
+        await apiPost(`/admin/voting/${confirmAction}`);
+      }
       setConfirmAction(null);
       await load();
     } catch (err) {
@@ -72,19 +76,44 @@ export default function AdminVotingPage() {
               Start Voting
             </button>
           )}
+
+          {/* ── Danger Zone ── */}
+          <div className="mt-6 border-t border-navy-deep/10 pt-6">
+            <p className="mb-3 text-xs uppercase tracking-widest text-navy-deep/40">Danger Zone</p>
+            <button
+              onClick={() => setConfirmAction("clear")}
+              className="w-full rounded border border-rose/50 bg-rose/5 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-rose transition hover:bg-rose hover:text-white"
+            >
+              🗑 Clear All Votes
+            </button>
+          </div>
         </div>
       )}
 
       {confirmAction && (
         <ConfirmDialog
-          title={confirmAction === "start" ? "Start Voting?" : "Stop Voting?"}
+          title={
+            confirmAction === "start"
+              ? "Start Voting?"
+              : confirmAction === "stop"
+              ? "Stop Voting?"
+              : "Clear All Votes?"
+          }
           message={
             confirmAction === "start"
               ? "Students will be able to sign in and cast their votes immediately."
-              : "Voting will immediately close and no further votes can be submitted."
+              : confirmAction === "stop"
+              ? "Voting will immediately close and no further votes can be submitted."
+              : "This will permanently delete every vote that has been cast. This action cannot be undone."
           }
-          confirmLabel={confirmAction === "start" ? "Start Voting" : "Stop Voting"}
-          danger={confirmAction === "stop"}
+          confirmLabel={
+            confirmAction === "start"
+              ? "Start Voting"
+              : confirmAction === "stop"
+              ? "Stop Voting"
+              : "Yes, Clear All Votes"
+          }
+          danger={confirmAction === "stop" || confirmAction === "clear"}
           busy={busy}
           onConfirm={handleConfirm}
           onCancel={() => setConfirmAction(null)}

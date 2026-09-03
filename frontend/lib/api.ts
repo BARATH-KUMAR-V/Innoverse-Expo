@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = "/api";
 
 export class ApiError extends Error {
   status: number;
@@ -33,7 +33,7 @@ function toApiError(err: unknown): ApiError {
 
 export async function apiGet<T>(path: string): Promise<T> {
   try {
-    const res = await fetch(`${API_URL}${path}`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
     return await handleResponse<T>(res);
   } catch (err) {
     throw toApiError(err);
@@ -42,8 +42,22 @@ export async function apiGet<T>(path: string): Promise<T> {
 
 export async function apiPost<T = unknown>(path: string, data?: unknown): Promise<T> {
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_BASE}${path}`, {
       method: "POST",
+      credentials: "include",
+      headers: data !== undefined ? { "Content-Type": "application/json" } : undefined,
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+    return await handleResponse<T>(res);
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function apiPut<T = unknown>(path: string, data?: unknown): Promise<T> {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "PUT",
       credentials: "include",
       headers: data !== undefined ? { "Content-Type": "application/json" } : undefined,
       body: data !== undefined ? JSON.stringify(data) : undefined,
@@ -56,28 +70,24 @@ export async function apiPost<T = unknown>(path: string, data?: unknown): Promis
 
 export async function apiDelete<T = unknown>(path: string): Promise<T> {
   try {
-    const res = await fetch(`${API_URL}${path}`, { method: "DELETE", credentials: "include" });
+    const res = await fetch(`${API_BASE}${path}`, { method: "DELETE", credentials: "include" });
     return await handleResponse<T>(res);
   } catch (err) {
     throw toApiError(err);
   }
 }
 
-/** For multipart/form-data admin uploads - never set Content-Type manually, the browser adds the boundary. */
-export async function apiUpload<T = unknown>(path: string, method: "POST" | "PUT", formData: FormData): Promise<T> {
-  try {
-    const res = await fetch(`${API_URL}${path}`, {
-      method,
-      credentials: "include",
-      body: formData,
-    });
-    return await handleResponse<T>(res);
-  } catch (err) {
-    throw toApiError(err);
+/** Downloads a file response (e.g. the admin CSV export) as a Blob, honoring the same error contract as the JSON helpers. */
+export async function apiDownload(path: string): Promise<Blob> {
+  const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.error || "server_error", body?.message || "Download failed.");
   }
+  return res.blob();
 }
 
 /** Full-page navigation target for "Continue with Google" - this cannot be a fetch() call, it must be a real browser navigation so Google's own login UI can load. */
 export function googleLoginUrl(): string {
-  return `${API_URL}/auth/google`;
+  return `${API_BASE}/auth/google`;
 }

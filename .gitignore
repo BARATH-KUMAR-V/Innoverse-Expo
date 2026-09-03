@@ -1,0 +1,4 @@
+# Raw source media for the one-time team import (frontend/scripts/import-teams.ts).
+# Already uploaded to Supabase Storage - keeping it out of git avoids ~190MB
+# of binary video files bloating the repository.
+/flower vase image & video/

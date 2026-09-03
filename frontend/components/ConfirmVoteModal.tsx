@@ -1,14 +1,25 @@
 "use client";
 
+import { formatEventDateTime } from "@/lib/format-datetime";
+
 interface ConfirmVoteModalProps {
   teamName: string;
+  winnersAnnounceAt: string | null;
   submitting: boolean;
   errorMessage: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export default function ConfirmVoteModal({ teamName, submitting, errorMessage, onConfirm, onCancel }: ConfirmVoteModalProps) {
+export default function ConfirmVoteModal({
+  teamName,
+  winnersAnnounceAt,
+  submitting,
+  errorMessage,
+  onConfirm,
+  onCancel,
+}: ConfirmVoteModalProps) {
+  const announceLabel = formatEventDateTime(winnersAnnounceAt);
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-navy-deep/70 px-4 backdrop-blur-sm"
@@ -34,7 +45,7 @@ export default function ConfirmVoteModal({ teamName, submitting, errorMessage, o
         <ul className="mb-6 space-y-1 text-left text-xs text-navy-deep/60">
           <li>• One vote per student</li>
           <li>• Vote is anonymous</li>
-          <li>• Results announced Saturday 2:00 PM</li>
+          <li>• Results announced {announceLabel || "after voting closes"}</li>
         </ul>
 
         {errorMessage && (

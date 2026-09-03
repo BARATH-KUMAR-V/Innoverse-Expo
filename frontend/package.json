@@ -10,23 +10,29 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "import-teams": "node -r tsx/cjs -r ./scripts/preload-env.cjs scripts/import-teams.ts"
   },
   "dependencies": {
-    "next": "15.5.25",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "^16.3.4",
+    "pg": "^8.12.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "15.5.25",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   }
 }

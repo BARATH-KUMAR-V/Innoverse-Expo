@@ -19,6 +19,11 @@ const body = Inter({
 export const metadata: Metadata = {
   title: "INNOVERSE — Prompt to Product Expo",
   description: "Vote for your favorite student product at the INNOVERSE Prompt to Product Expo.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

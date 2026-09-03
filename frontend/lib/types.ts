@@ -22,8 +22,23 @@ export interface AdminTeam extends TeamDetail {
   createdAt: string;
 }
 
+export type VotingState = "NOT_STARTED" | "LIVE" | "CLOSED" | "RESULTS_PUBLISHED";
+
 export interface VotingStatus {
   votingOpen: boolean;
+  votingState: VotingState;
+  votingEndsAt: string | null;
+  winnersAnnounceAt: string | null;
+}
+
+export interface EventSettings {
+  expoName: string;
+  expoDate: string | null;
+  expoVenue: string | null;
+  votingStartsAt: string | null;
+  votingEndsAt: string | null;
+  winnersAnnounceAt: string | null;
+  votingState: VotingState;
 }
 
 export interface MyVote {
