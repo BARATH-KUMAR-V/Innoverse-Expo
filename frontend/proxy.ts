@@ -70,7 +70,12 @@ export default function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Config to specify which paths the middleware should run on
+// Config to specify which paths the middleware should run on.
+// Auth routes are intentionally excluded - intercepting them can break
+// the OAuth state-cookie flow (cookie set on redirect may not survive
+// the middleware layer in Next.js 16 Turbopack).
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    '/api/((?!auth/).*)',
+  ],
 };
