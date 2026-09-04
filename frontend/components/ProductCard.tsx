@@ -141,13 +141,12 @@ export default function ProductCard({
         }
       },
       {
-        // Shrink the root viewport by 15% top and bottom, creating a centre
-        // band that is 70% of the screen height.  Combined with threshold:1.0
-        // this means the ENTIRE card must sit fully inside that centre zone
-        // before playback starts — and stops the moment any part of the card
-        // drifts out of the zone.
-        rootMargin: "-15% 0px -15% 0px",
-        threshold: 1.0,
+        // Remove top dead zone so it starts playing sooner as it scrolls up,
+        // but keep a bottom margin so it doesn't play if barely peeking in.
+        // Use a more forgiving threshold (0.6) so it plays even on small phones
+        // where the card takes up most of the screen.
+        rootMargin: "0px 0px -15% 0px",
+        threshold: 0.6,
       }
     );
 
