@@ -141,12 +141,13 @@ export default function ProductCard({
         }
       },
       {
-        // Remove top dead zone so it starts playing sooner as it scrolls up,
-        // but keep a bottom margin so it doesn't play if barely peeking in.
-        // Use a more forgiving threshold (0.6) so it plays even on small phones
-        // where the card takes up most of the screen.
-        rootMargin: "0px 0px -15% 0px",
-        threshold: 0.6,
+        // The user wants to see the static image for a moment before playback.
+        // Setting a 10% bottom dead zone and requiring the entire card (1.0)
+        // to cross it before playing accomplishes this.
+        // Note: If a user has a phone screen so small that the card height
+        // exceeds 90% of the screen height, it won't play.
+        rootMargin: "0px 0px -10% 0px",
+        threshold: 1.0,
       }
     );
 
