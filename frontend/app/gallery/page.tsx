@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { apiGet, ApiError } from "@/lib/api";
-import { GalleryTeam, VotingStatus } from "@/lib/types";
+import { GalleryTeam, MyVote, VotingStatus } from "@/lib/types";
 import { formatEventDateTime } from "@/lib/format-datetime";
 import Header from "@/components/Header";
 import ProductCard from "@/components/ProductCard";
@@ -16,6 +16,7 @@ export default function GalleryPage() {
   const router = useRouter();
   const { status, fetchMe } = useAuthStore();
   const [teams, setTeams] = useState<GalleryTeam[] | null>(null);
+  const [myVote, setMyVote] = useState<MyVote | null>(null);
   const [votingStatus, setVotingStatus] = useState<VotingStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,12 +36,14 @@ export default function GalleryPage() {
     let cancelled = false;
     async function load() {
       try {
-        const [teamsData, statusData] = await Promise.all([
+        const [teamsData, voteData, statusData] = await Promise.all([
           apiGet<GalleryTeam[]>("/teams"),
+          apiGet<MyVote>("/votes/my-vote"),
           apiGet<VotingStatus>("/votes/status"),
         ]);
         if (cancelled) return;
         setTeams(teamsData);
+        setMyVote(voteData);
         setVotingStatus(statusData);
       } catch (err) {
         if (!cancelled) setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
@@ -51,6 +54,11 @@ export default function GalleryPage() {
       cancelled = true;
     };
   }, [status]);
+
+  // Called by any card after a successful vote — mark vote as cast for all cards
+  const handleVoteSuccess = useCallback(() => {
+    setMyVote({ hasVoted: true, teamId: null });
+  }, []);
 
   if (status === "idle" || status === "loading" || status === "unauthenticated") {
     return <LoadingState message="Loading products..." />;
@@ -94,8 +102,15 @@ export default function GalleryPage() {
         )}
         {teams && teams.length > 0 && (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {teams.map((team) => (
-              <ProductCard key={team.id} team={team} />
+            {teams.map((team, index) => (
+              <ProductCard
+                key={team.id}
+                team={team}
+                myVote={myVote}
+                votingStatus={votingStatus}
+                onVoteSuccess={handleVoteSuccess}
+                priority={index < 6}
+              />
             ))}
           </div>
         )}

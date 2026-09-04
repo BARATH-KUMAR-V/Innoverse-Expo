@@ -10,6 +10,7 @@ export const GET = handleRoute(async (req: NextRequest) => {
       id: t.id,
       teamName: t.team_name,
       imageUrl: t.image_url,
+      videoUrl: t.video_url,
     }))
   );
 });

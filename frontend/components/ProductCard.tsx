@@ -1,33 +1,233 @@
-import Image from "next/image";
-import Link from "next/link";
-import { GalleryTeam } from "@/lib/types";
+"use client";
 
-export default function ProductCard({ team }: { team: GalleryTeam }) {
+import { useEffect, useRef, useState, useCallback } from "react";
+import Image from "next/image";
+import { GalleryTeam, MyVote, VotingStatus } from "@/lib/types";
+import ConfirmVoteModal from "@/components/ConfirmVoteModal";
+import { apiPost, ApiError } from "@/lib/api";
+import { useRouter } from "next/navigation";
+
+interface ProductCardProps {
+  team: GalleryTeam;
+  myVote: MyVote | null;
+  votingStatus: VotingStatus | null;
+  onVoteSuccess: () => void;
+  priority?: boolean;
+}
+
+export default function ProductCard({
+  team,
+  myVote,
+  votingStatus,
+  onVoteSuccess,
+  priority = false,
+}: ProductCardProps) {
+  const router = useRouter();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [voteError, setVoteError] = useState<string | null>(null);
+
+  const hasVoted = myVote?.hasVoted ?? false;
+  const votingOpen = votingStatus?.votingOpen ?? true;
+  const hasVideo = Boolean(team.videoUrl);
+
+  // Detect touch/mobile device once on mount
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
+  // Lazy-load the video src on first interaction/intersection
+  const loadVideo = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || videoLoaded || !team.videoUrl) return;
+    video.src = team.videoUrl;
+    video.load();
+    setVideoLoaded(true);
+  }, [videoLoaded, team.videoUrl]);
+
+  const playVideo = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    loadVideo();
+    setIsPlaying(true);
+    video.play().catch(() => {
+      // Autoplay blocked — silently ignore
+    });
+  }, [loadVideo]);
+
+  const pauseVideo = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.pause();
+    video.currentTime = 0;
+    setIsPlaying(false);
+  }, []);
+
+  // Desktop: hover handlers — only register on non-touch devices
+  const handleMouseEnter = useCallback(() => {
+    if (isTouchDevice || !hasVideo) return;
+    playVideo();
+  }, [isTouchDevice, hasVideo, playVideo]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isTouchDevice || !hasVideo) return;
+    pauseVideo();
+  }, [isTouchDevice, hasVideo, pauseVideo]);
+
+  // Mobile: IntersectionObserver
+  useEffect(() => {
+    if (!isTouchDevice || !hasVideo) return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          playVideo();
+        } else {
+          pauseVideo();
+        }
+      },
+      { threshold: 0.6 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isTouchDevice, hasVideo, playVideo, pauseVideo]);
+
+  // Vote submit
+  async function handleConfirmVote() {
+    setSubmitting(true);
+    setVoteError(null);
+    try {
+      await apiPost("/votes", { teamId: team.id });
+      setConfirmOpen(false);
+      onVoteSuccess();
+      router.push("/success");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setVoteError(err.message);
+        if (err.code === "already_voted") {
+          onVoteSuccess();
+        }
+      } else {
+        setVoteError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <Link
-      href={`/product/${team.id}`}
-      className="group block overflow-hidden rounded-lg border border-navy-deep/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-gold/50 hover:shadow-lg"
-    >
-      <div className="relative w-full overflow-hidden bg-navy-deep/5">
-        {team.imageUrl ? (
-          <Image
-            src={team.imageUrl}
-            alt={team.teamName}
-            width={800}
-            height={800}
-            sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-            className="w-full h-auto transition duration-500 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-navy-deep/25">
-            <PlaceholderIcon />
-          </div>
-        )}
+    <>
+      <div
+        ref={cardRef}
+        className="group relative overflow-hidden rounded-xl border border-navy-deep/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-gold/50 hover:shadow-lg"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* ── Media area ── */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-navy-deep/5">
+          {/* Static image — hidden when video is playing */}
+          {team.imageUrl ? (
+            <Image
+              src={team.imageUrl}
+              alt={team.teamName}
+              fill
+              sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
+              className={`object-cover object-bottom transition-opacity duration-500 ${
+                isPlaying ? "opacity-0" : "opacity-100"
+              }`}
+              priority={priority}
+            />
+          ) : (
+            <div
+              className={`absolute inset-0 flex items-center justify-center text-navy-deep/25 transition-opacity duration-500 ${
+                isPlaying ? "opacity-0" : "opacity-100"
+              }`}
+            >
+              <PlaceholderIcon />
+            </div>
+          )}
+
+          {/* Video — lazy-loaded, always rendered in DOM once team has videoUrl */}
+          {hasVideo && (
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              loop
+              preload="metadata"
+              aria-label={`${team.teamName} product video`}
+              className={`absolute inset-0 h-full w-full object-cover ${
+                team.teamName.trim().toUpperCase() === "MYSTREY SOLVER"
+                  ? "object-bottom"
+                  : "object-[50%_65%]"
+              } transition-opacity duration-500 ${
+                isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            />
+          )}
+
+          {/* Play hint on desktop for cards with video, when not yet playing */}
+          {hasVideo && !isTouchDevice && !isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
+                <PlayIcon />
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Card footer ── */}
+        <div className="border-t border-gold/20 px-5 py-4 text-center">
+          <p className="mb-3 font-serif text-base tracking-wide text-navy-deep">
+            {team.teamName}
+          </p>
+
+          {/* Vote button area */}
+          {votingOpen === false ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-rose/30 bg-rose/10 px-4 py-1.5 text-xs text-rose">
+              🔴 Voting Closed
+            </span>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmOpen(true);
+              }}
+              className="w-full rounded-sm bg-navy-deep px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold shadow-sm transition hover:bg-navy active:scale-95"
+            >
+              Cast Your Vote
+            </button>
+          )}
+        </div>
       </div>
-      <div className="border-t border-gold/20 px-5 py-4 text-center">
-        <p className="font-serif text-base tracking-wide text-navy-deep">{team.teamName}</p>
-      </div>
-    </Link>
+
+      {/* ── Confirm modal ── */}
+      {confirmOpen && (
+        <ConfirmVoteModal
+          teamName={team.teamName}
+          winnersAnnounceAt={votingStatus?.winnersAnnounceAt ?? null}
+          submitting={submitting}
+          errorMessage={voteError}
+          onConfirm={handleConfirmVote}
+          onCancel={() => {
+            if (!submitting) {
+              setConfirmOpen(false);
+              setVoteError(null);
+            }
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -37,6 +237,14 @@ function PlaceholderIcon() {
       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.2" />
       <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
       <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
     </svg>
   );
 }

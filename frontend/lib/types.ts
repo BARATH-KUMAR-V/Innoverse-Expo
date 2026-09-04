@@ -10,11 +10,10 @@ export interface GalleryTeam {
   id: string;
   teamName: string;
   imageUrl: string | null;
-}
-
-export interface TeamDetail extends GalleryTeam {
   videoUrl: string | null;
 }
+
+export interface TeamDetail extends GalleryTeam {}
 
 export interface AdminTeam extends TeamDetail {
   isActive: boolean;
