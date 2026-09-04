@@ -12,10 +12,10 @@ export default function SuccessPage() {
         Your vote has been successfully recorded and cannot be changed.
       </p>
       <Link
-        href="/"
+        href="/gallery"
         className="rounded-sm border border-gold px-10 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-gold transition hover:bg-gold hover:text-navy-deep"
       >
-        Back to Home
+        Back to Gallery
       </Link>
     </div>
   );
