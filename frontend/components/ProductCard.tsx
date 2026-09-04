@@ -27,8 +27,12 @@ export default function ProductCard({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [videoLoaded, setVideoLoaded] = useState(false);
+  // isPlaying = video element has emitted the "playing" event (actually rendering frames)
   const [isPlaying, setIsPlaying] = useState(false);
+  // isBuffering = play() called but "playing" not yet fired
+  const [isBuffering, setIsBuffering] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const wantsToPlay = useRef(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -38,12 +42,49 @@ export default function ProductCard({
   const votingOpen = votingStatus?.votingOpen ?? true;
   const hasVideo = Boolean(team.videoUrl);
 
-  // Detect touch/mobile device once on mount
+  // ── Device detection ─────────────────────────────────────────────────────
   useEffect(() => {
     setIsTouchDevice(window.matchMedia("(pointer: coarse)").matches);
   }, []);
 
-  // Lazy-load the video src on first interaction/intersection
+  // ── Wire up video events once ────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // "playing" fires when frames are actually rendering — no more white flash
+    const onPlaying = () => {
+      if (wantsToPlay.current) {
+        setIsPlaying(true);
+        setIsBuffering(false);
+      }
+    };
+
+    // Stall / wait events — show buffering ring if we're supposed to be playing
+    const onWaiting = () => {
+      if (wantsToPlay.current) setIsBuffering(true);
+    };
+
+    // If video errors, silently fall back to image
+    const onError = () => {
+      wantsToPlay.current = false;
+      setIsPlaying(false);
+      setIsBuffering(false);
+    };
+
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("stalled", onWaiting);
+    video.addEventListener("error", onError);
+    return () => {
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("stalled", onWaiting);
+      video.removeEventListener("error", onError);
+    };
+  }, []);
+
+  // ── Lazy-load src on first interaction ───────────────────────────────────
   const loadVideo = useCallback(() => {
     const video = videoRef.current;
     if (!video || videoLoaded || !team.videoUrl) return;
@@ -56,21 +97,25 @@ export default function ProductCard({
     const video = videoRef.current;
     if (!video) return;
     loadVideo();
-    setIsPlaying(true);
+    wantsToPlay.current = true;
+    setIsBuffering(true); // show spinner immediately; "playing" event will clear it
     video.play().catch(() => {
-      // Autoplay blocked — silently ignore
+      wantsToPlay.current = false;
+      setIsBuffering(false);
     });
   }, [loadVideo]);
 
   const pauseVideo = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    wantsToPlay.current = false;
     video.pause();
     video.currentTime = 0;
     setIsPlaying(false);
+    setIsBuffering(false);
   }, []);
 
-  // Desktop: hover handlers — only register on non-touch devices
+  // ── Desktop hover ────────────────────────────────────────────────────────
   const handleMouseEnter = useCallback(() => {
     if (isTouchDevice || !hasVideo) return;
     playVideo();
@@ -81,7 +126,7 @@ export default function ProductCard({
     pauseVideo();
   }, [isTouchDevice, hasVideo, pauseVideo]);
 
-  // Mobile: IntersectionObserver
+  // ── Mobile IntersectionObserver ──────────────────────────────────────────
   useEffect(() => {
     if (!isTouchDevice || !hasVideo) return;
     const el = cardRef.current;
@@ -102,7 +147,7 @@ export default function ProductCard({
     return () => observer.disconnect();
   }, [isTouchDevice, hasVideo, playVideo, pauseVideo]);
 
-  // Vote submit
+  // ── Vote submit ──────────────────────────────────────────────────────────
   async function handleConfirmVote() {
     setSubmitting(true);
     setVoteError(null);
@@ -134,8 +179,13 @@ export default function ProductCard({
         onMouseLeave={handleMouseLeave}
       >
         {/* ── Media area ── */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-navy-deep/5">
-          {/* Static image — hidden when video is playing */}
+        {/*
+          bg-black prevents any white flash — the image sits on top,
+          the video cross-fades in only once the "playing" event fires.
+        */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-black">
+
+          {/* Static image — stays visible until video is ACTUALLY playing */}
           {team.imageUrl ? (
             <Image
               src={team.imageUrl}
@@ -149,7 +199,7 @@ export default function ProductCard({
             />
           ) : (
             <div
-              className={`absolute inset-0 flex items-center justify-center text-navy-deep/25 transition-opacity duration-500 ${
+              className={`absolute inset-0 flex items-center justify-center text-white/25 transition-opacity duration-500 ${
                 isPlaying ? "opacity-0" : "opacity-100"
               }`}
             >
@@ -157,7 +207,7 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Video — lazy-loaded, always rendered in DOM once team has videoUrl */}
+          {/* Video — lazy-loaded; opacity transitions only after "playing" fires */}
           {hasVideo && (
             <video
               ref={videoRef}
@@ -176,8 +226,15 @@ export default function ProductCard({
             />
           )}
 
-          {/* Play hint on desktop for cards with video, when not yet playing */}
-          {hasVideo && !isTouchDevice && !isPlaying && (
+          {/* Buffering spinner — shown while video is loading but hasn't rendered yet */}
+          {isBuffering && !isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            </div>
+          )}
+
+          {/* Play hint — shown on desktop hover before playback starts */}
+          {hasVideo && !isTouchDevice && !isPlaying && !isBuffering && (
             <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
                 <PlayIcon />
@@ -192,7 +249,6 @@ export default function ProductCard({
             {team.teamName}
           </p>
 
-          {/* Vote button area */}
           {votingOpen === false ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-rose/30 bg-rose/10 px-4 py-1.5 text-xs text-rose">
               🔴 Voting Closed
