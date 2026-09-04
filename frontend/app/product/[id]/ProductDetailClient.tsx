@@ -131,7 +131,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
                     priority
                   />
                   {/* hover hint */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-100 sm:opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                     <span className="rounded-full bg-black/50 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur-sm">
                       View Full Image
                     </span>
