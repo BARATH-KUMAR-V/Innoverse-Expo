@@ -60,7 +60,7 @@ export default function AdminDashboardPage() {
             <AdminLinkCard href="/admin/teams" label="Manage Teams" />
             <AdminLinkCard href="/admin/voting" label="Voting Control" />
             <AdminLinkCard href="/admin/rankings" label="View Rankings" />
-            <AdminLinkCard href="/admin/rankings" label="Export CSV" />
+            <AdminLinkCard href="/admin/voters" label="Voter List" />
           </div>
         </>
       )}

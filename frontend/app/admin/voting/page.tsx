@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiPost, ApiError } from "@/lib/api";
+import { apiGet, apiPost, apiDelete, ApiError } from "@/lib/api";
 import { AdminStats } from "@/lib/types";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import LoadingState from "@/components/LoadingState";
@@ -32,7 +32,7 @@ export default function AdminVotingPage() {
     setBusy(true);
     try {
       if (confirmAction === "clear") {
-        await fetch("/api/admin/votes/clear", { method: "DELETE", credentials: "include" });
+        await apiDelete("/admin/votes/clear");
       } else {
         await apiPost(`/admin/voting/${confirmAction}`);
       }

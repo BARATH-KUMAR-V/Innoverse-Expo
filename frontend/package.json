@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "import-teams": "node -r tsx/cjs -r ./scripts/preload-env.cjs scripts/import-teams.ts"
   },

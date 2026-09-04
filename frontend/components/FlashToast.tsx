@@ -70,7 +70,7 @@ export default function FlashToast() {
         <ul className="space-y-3 text-xs leading-relaxed text-cream/80">
           <li className="flex items-start gap-2">
             <span className="mt-0.5 text-gold">🎨</span>
-            <span>Vote based on the <strong className="text-cream">creativity and innovation</strong> of the students' work.</span>
+            <span>Vote based on the <strong className="text-cream">creativity and innovation</strong> of the students&apos; work.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-0.5 text-gold">🗳️</span>
