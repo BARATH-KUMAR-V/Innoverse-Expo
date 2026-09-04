@@ -140,7 +140,15 @@ export default function ProductCard({
           pauseVideo();
         }
       },
-      { threshold: 0.6 }
+      {
+        // Shrink the root viewport by 15% top and bottom, creating a centre
+        // band that is 70% of the screen height.  Combined with threshold:1.0
+        // this means the ENTIRE card must sit fully inside that centre zone
+        // before playback starts — and stops the moment any part of the card
+        // drifts out of the zone.
+        rootMargin: "-15% 0px -15% 0px",
+        threshold: 1.0,
+      }
     );
 
     observer.observe(el);
