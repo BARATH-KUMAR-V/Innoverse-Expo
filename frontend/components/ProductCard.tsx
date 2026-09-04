@@ -257,13 +257,7 @@ export default function ProductCard({
             <span className="inline-flex items-center gap-1 rounded-full border border-rose/30 bg-rose/10 px-4 py-1.5 text-xs text-rose">
               🔴 Voting Closed
             </span>
-          ) : hasVoted ? (
-            myVote?.teamId === team.id ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/30 bg-emerald-50 px-4 py-1.5 text-xs text-emerald-700">
-                ✓ Your Choice
-              </span>
-            ) : null
-          ) : (
+          ) : hasVoted ? null : (
             <button
               onClick={(e) => {
                 e.stopPropagation();
