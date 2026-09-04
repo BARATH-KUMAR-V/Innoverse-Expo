@@ -11,7 +11,7 @@ interface ProductCardProps {
   team: GalleryTeam;
   myVote: MyVote | null;
   votingStatus: VotingStatus | null;
-  onVoteSuccess: () => void;
+  onVoteSuccess: (teamId: string) => void;
   priority?: boolean;
 }
 
@@ -161,13 +161,13 @@ export default function ProductCard({
     try {
       await apiPost("/votes", { teamId: team.id });
       setConfirmOpen(false);
-      onVoteSuccess();
+      onVoteSuccess(team.id);
       router.push("/success");
     } catch (err) {
       if (err instanceof ApiError) {
         setVoteError(err.message);
         if (err.code === "already_voted") {
-          onVoteSuccess();
+          onVoteSuccess(team.id);
         }
       } else {
         setVoteError("Something went wrong. Please try again.");
@@ -260,6 +260,12 @@ export default function ProductCard({
             <span className="inline-flex items-center gap-1 rounded-full border border-rose/30 bg-rose/10 px-4 py-1.5 text-xs text-rose">
               🔴 Voting Closed
             </span>
+          ) : hasVoted ? (
+            myVote?.teamId === team.id ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/30 bg-emerald-50 px-4 py-1.5 text-xs text-emerald-700">
+                ✓ Your Choice
+              </span>
+            ) : null
           ) : (
             <button
               onClick={(e) => {

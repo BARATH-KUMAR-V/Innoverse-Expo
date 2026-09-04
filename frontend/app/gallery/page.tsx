@@ -56,8 +56,8 @@ export default function GalleryPage() {
   }, [status]);
 
   // Called by any card after a successful vote — mark vote as cast for all cards
-  const handleVoteSuccess = useCallback(() => {
-    setMyVote({ hasVoted: true, teamId: null });
+  const handleVoteSuccess = useCallback((teamId: string) => {
+    setMyVote({ hasVoted: true, teamId });
   }, []);
 
   if (status === "idle" || status === "loading" || status === "unauthenticated") {
@@ -67,7 +67,7 @@ export default function GalleryPage() {
   return (
     <div className="min-h-screen bg-cream">
       <Header />
-      <FlashToast />
+      {myVote && !myVote.hasVoted && votingStatus?.votingOpen && <FlashToast />}
 
       <section className="mx-auto max-w-6xl px-6 pb-6 pt-12 text-center">
         <p className="mb-2 text-xs uppercase tracking-[0.35em] text-gold">Innoverse</p>
