@@ -2,6 +2,9 @@ export default function VideoPlayer({ src, teamName }: { src: string; teamName: 
   return (
     <video
       controls
+      autoPlay
+      loop
+      muted
       playsInline
       preload="metadata"
       className="w-full rounded-lg border border-navy-deep/10 bg-black shadow-md"
