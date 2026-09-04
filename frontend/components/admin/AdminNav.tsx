@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/admin/voting", label: "Voting Control" },
   { href: "/admin/rankings", label: "Rankings & Export" },
   { href: "/admin/voters", label: "Voters" },
+  { href: "/admin/eligible-voters", label: "Eligible Voters" },
 ];
 
 export default function AdminNav() {

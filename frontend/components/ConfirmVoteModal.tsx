@@ -43,9 +43,9 @@ export default function ConfirmVoteModal({
         </p>
 
         <ul className="mb-6 space-y-1 text-left text-xs text-navy-deep/60">
-          <li>• One vote per student</li>
-          <li>• Vote is anonymous</li>
-          <li>• Results announced {announceLabel || "after voting closes"}</li>
+          <li>• Each voter gets one vote.</li>
+          <li>• Everyone's vote is completely anonymous.</li>
+          <li>• Results will be announced on Tuesday, September 8, at 1:00 p.m.</li>
         </ul>
 
         {errorMessage && (

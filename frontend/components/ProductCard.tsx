@@ -252,9 +252,6 @@ export default function ProductCard({
 
         {/* ── Card footer ── */}
         <div className="border-t border-gold/20 px-5 py-4 text-center">
-          <p className="mb-3 font-serif text-base tracking-wide text-navy-deep">
-            {team.teamName}
-          </p>
 
           {votingOpen === false ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-rose/30 bg-rose/10 px-4 py-1.5 text-xs text-rose">

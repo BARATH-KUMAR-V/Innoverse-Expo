@@ -41,3 +41,8 @@ export function toPublicUser(user: UserRow) {
     isAdmin: isAdminEmail(user.email),
   };
 }
+
+export async function allUsers(): Promise<UserRow[]> {
+  const result = await pool.query<UserRow>("select * from users order by created_at desc");
+  return result.rows;
+}

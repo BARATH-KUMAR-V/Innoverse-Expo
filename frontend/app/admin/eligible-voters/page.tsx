@@ -5,11 +5,13 @@ import { apiGet, ApiError } from "@/lib/api";
 import LoadingState from "@/components/LoadingState";
 import ErrorBanner from "@/components/ErrorBanner";
 
-interface VoterRow {
-  voterEmail: string;
-  voterName: string;
-  teamName: string;
-  votedAt: string;
+interface UserRow {
+  id: string;
+  google_id: string;
+  name: string;
+  email: string;
+  picture: string | null;
+  created_at: string;
 }
 
 function formatDate(iso: string) {
@@ -23,23 +25,23 @@ function formatDate(iso: string) {
   });
 }
 
-export default function AdminVotersPage() {
-  const [voters, setVoters] = useState<VoterRow[] | null>(null);
+export default function EligibleVotersPage() {
+  const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    apiGet<VoterRow[]>("/admin/voters")
-      .then(setVoters)
+    apiGet<UserRow[]>("/admin/users")
+      .then(setUsers)
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Something went wrong.")
       );
   }, []);
 
-  const filtered = voters?.filter(
-    (v) =>
-      v.voterEmail.toLowerCase().includes(search.toLowerCase()) ||
-      v.voterName.toLowerCase().includes(search.toLowerCase())
+  const filtered = users?.filter(
+    (u) =>
+      u.email.toLowerCase().includes(search.toLowerCase()) ||
+      u.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -48,10 +50,10 @@ export default function AdminVotersPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl uppercase tracking-wide text-navy-deep">
-            Voter List
+            Eligible Voters
           </h1>
           <p className="mt-1 text-xs text-navy-deep/50">
-            {voters ? `${voters.length} vote${voters.length !== 1 ? "s" : ""} cast` : "Loading…"}
+            {users ? `${users.length} logged in user${users.length !== 1 ? "s" : ""}` : "Loading…"}
           </p>
         </div>
 
@@ -66,11 +68,11 @@ export default function AdminVotersPage() {
       </div>
 
       {error && <ErrorBanner message={error} />}
-      {!voters && !error && <LoadingState message="Loading voters…" />}
+      {!users && !error && <LoadingState message="Loading eligible voters…" />}
 
       {filtered && filtered.length === 0 && (
         <p className="py-16 text-center text-sm text-navy-deep/50">
-          {search ? "No voters match your search." : "No votes have been cast yet."}
+          {search ? "No eligible voters match your search." : "No users have logged in yet."}
         </p>
       )}
 
@@ -82,28 +84,42 @@ export default function AdminVotersPage() {
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">#</th>
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">Name</th>
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">Email</th>
-
-                <th className="px-5 py-3 font-medium uppercase tracking-wide">Time</th>
+                <th className="px-5 py-3 font-medium uppercase tracking-wide">First Logged In</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((v, i) => (
+              {filtered.map((u, i) => (
                 <tr
-                  key={v.voterEmail}
+                  key={u.id}
                   className="border-t border-navy-deep/10 transition hover:bg-navy-deep/[0.03]"
                 >
                   <td className="px-5 py-3 text-navy-deep/40">{i + 1}</td>
-                  <td className="px-5 py-3 font-medium text-navy-deep">{v.voterName}</td>
+                  <td className="px-5 py-3 font-medium text-navy-deep">
+                    <div className="flex items-center gap-3">
+                      {u.picture ? (
+                        <img
+                          src={u.picture}
+                          alt={u.name}
+                          className="h-8 w-8 rounded-full border border-navy-deep/10 bg-cream object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-navy-deep/10 bg-navy-deep/5 text-xs text-navy-deep">
+                          {u.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span>{u.name}</span>
+                    </div>
+                  </td>
                   <td className="px-5 py-3 text-navy-deep/70">
                     <a
-                      href={`mailto:${v.voterEmail}`}
+                      href={`mailto:${u.email}`}
                       className="hover:text-gold hover:underline"
                     >
-                      {v.voterEmail}
+                      {u.email}
                     </a>
                   </td>
-
-                  <td className="px-5 py-3 text-navy-deep/50">{formatDate(v.votedAt)}</td>
+                  <td className="px-5 py-3 text-navy-deep/50">{formatDate(u.created_at)}</td>
                 </tr>
               ))}
             </tbody>
