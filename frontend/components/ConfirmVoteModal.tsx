@@ -31,13 +31,12 @@ export default function ConfirmVoteModal({
         <p className="mb-1 text-gold" aria-hidden="true">
           ✨
         </p>
-        <h2 id="confirm-vote-title" className="mb-1 font-serif text-xl uppercase tracking-wide text-navy-deep">
+        <h2 id="confirm-vote-title" className="mb-6 font-serif text-xl uppercase tracking-wide text-navy-deep">
           Cast Your Vote
         </h2>
-        <p className="mb-5 font-serif text-2xl text-navy">{teamName}</p>
 
         <p className="mb-4 text-sm leading-relaxed text-navy-deep/70">
-          Are you sure you want to vote for this team?
+          Are you sure you want to vote for this model?
           <br />
           <span className="font-medium text-navy-deep">Your vote cannot be changed.</span>
         </p>
