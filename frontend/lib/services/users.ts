@@ -42,7 +42,16 @@ export function toPublicUser(user: UserRow) {
   };
 }
 
-export async function allUsers(): Promise<UserRow[]> {
-  const result = await pool.query<UserRow>("select * from users order by created_at desc");
+export interface UserWithVoteStatusRow extends UserRow {
+  has_voted: boolean;
+}
+
+export async function allUsers(): Promise<UserWithVoteStatusRow[]> {
+  const result = await pool.query<UserWithVoteStatusRow>(
+    `select u.*, case when v.id is not null then true else false end as has_voted
+     from users u
+     left join votes v on u.id = v.user_id
+     order by u.created_at desc`
+  );
   return result.rows;
 }

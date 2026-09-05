@@ -12,6 +12,7 @@ interface UserRow {
   email: string;
   picture: string | null;
   created_at: string;
+  has_voted: boolean;
 }
 
 function formatDate(iso: string) {
@@ -29,6 +30,7 @@ export default function EligibleVotersPage() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "voted" | "pending">("all");
 
   useEffect(() => {
     apiGet<UserRow[]>("/admin/users")
@@ -38,11 +40,18 @@ export default function EligibleVotersPage() {
       );
   }, []);
 
-  const filtered = users?.filter(
-    (u) =>
+  const filtered = users?.filter((u) => {
+    const matchesSearch =
       u.email.toLowerCase().includes(search.toLowerCase()) ||
-      u.name.toLowerCase().includes(search.toLowerCase())
-  );
+      u.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all"
+        ? true
+        : filterStatus === "voted"
+        ? u.has_voted
+        : !u.has_voted;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div>
@@ -57,14 +66,26 @@ export default function EligibleVotersPage() {
           </p>
         </div>
 
-        {/* Search */}
-        <input
-          type="search"
-          placeholder="Search by name or email…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded border border-navy-deep/15 bg-white px-4 py-2 text-sm text-navy-deep placeholder-navy-deep/40 shadow-sm outline-none focus:border-gold sm:w-72"
-        />
+        {/* Filters and Search */}
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as any)}
+            className="rounded border border-navy-deep/15 bg-white px-4 py-2 text-sm text-navy-deep shadow-sm outline-none focus:border-gold"
+          >
+            <option value="all">All Voters</option>
+            <option value="voted">Has Voted</option>
+            <option value="pending">Not Voted Yet</option>
+          </select>
+
+          <input
+            type="search"
+            placeholder="Search by name or email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded border border-navy-deep/15 bg-white px-4 py-2 text-sm text-navy-deep placeholder-navy-deep/40 shadow-sm outline-none focus:border-gold sm:w-72"
+          />
+        </div>
       </div>
 
       {error && <ErrorBanner message={error} />}
@@ -84,6 +105,7 @@ export default function EligibleVotersPage() {
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">#</th>
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">Name</th>
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">Email</th>
+                <th className="px-5 py-3 font-medium uppercase tracking-wide">Status</th>
                 <th className="px-5 py-3 font-medium uppercase tracking-wide">First Logged In</th>
               </tr>
             </thead>
@@ -118,6 +140,17 @@ export default function EligibleVotersPage() {
                     >
                       {u.email}
                     </a>
+                  </td>
+                  <td className="px-5 py-3">
+                    {u.has_voted ? (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Voted
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                        Pending
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-navy-deep/50">{formatDate(u.created_at)}</td>
                 </tr>
